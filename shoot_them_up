@@ -1,0 +1,349 @@
+#!/usr/bin/env python3
+
+
+import pygame
+import random
+import sys
+
+pygame.init()
+pygame.font.init()
+pygame.display.set_caption("Pygame shoot them up")
+police = pygame.font.SysFont("arial", 32)
+fenetre = pygame.display.set_mode((1280, 720), pygame.HWSURFACE | pygame.DOUBLEBUF | pygame.RESIZABLE)
+information_resolution = pygame.display.Info()
+largeur = int((information_resolution.current_w))
+hauteur = int((information_resolution.current_h))
+size = (largeur,hauteur)
+boucle = True
+temps = pygame.time.Clock()
+
+class Personnage(pygame.sprite.Sprite):
+	def __init__(self,file=("image/personnage_arret.png")):
+		super().__init__()
+		self.son_fin_de_partie=pygame.mixer.Sound("son/fin_de_partie.ogg")
+		self.son_collision=pygame.mixer.Sound("son/collision_personnage.ogg")
+		self.son_bonus=pygame.mixer.Sound("son/bonus.ogg")
+		self.son_collision_ennemi=pygame.mixer.Sound("son/collision_ennemi.ogg")
+		self.son_musique=pygame.mixer.Sound("son/musique.ogg")
+		self.image=pygame.Surface([78,36])
+		self.image=self.personnage=pygame.image.load(file).convert_alpha()
+		self.rect=self.personnage.get_rect()
+		self.rect.x=180
+		self.rect.y=360
+		self.position=(self.rect.x,self.rect.y)
+		self.niveau=0
+		self.score=0
+		self.vitesse=6
+		self.vie=3
+
+	def haut(self):
+		self.image=pygame.image.load("image/personnage_haut.png").convert_alpha()
+		if self.rect.y>45:
+			self.rect.y-=self.vitesse
+			self.position=(self.rect.x,self.rect.y)
+		else:
+			self.rect.y+=0
+
+	def bas(self):
+		self.image=pygame.image.load("image/personnage_bas.png").convert_alpha()
+		if self.rect.y<650:
+			self.rect.y+= self.vitesse
+			self.position=(self.rect.x,self.rect.y)
+		else:
+			self.rect.y+=0
+
+	def gauche(self):
+		if self.rect.x>0:
+			self.rect.x-= self.vitesse
+			self.position=(self.rect.x,self.rect.y)
+		else:
+			self.rect.x+=0
+
+	def droite(self):
+		if self.rect.x<1200:
+			self.rect.x+=self.vitesse
+			self.position=(self.rect.x,self.rect.y)
+		else:
+			self.rect.x+=0
+
+	def arret(self):
+		self.image=pygame.image.load("image/personnage_arret.png").convert_alpha()
+		self.rect.x+=0
+		self.rect.y+=0
+
+	def collision(self):
+		self.image=pygame.image.load("image/personnage_collision.png").convert_alpha()
+		self.son_collision.play()
+		self.vie-=1
+
+	def destruction(self):
+		self.son_fin_de_partie.play()
+
+	def reset(self):
+		self.image=pygame.image.load("image/personnage_arret.png").convert_alpha()
+		self.rect.x=0
+		self.rect.y=360
+		self.niveau=0
+		self.score=0
+		self.vie=3
+		self.vitesse=6
+
+class Laser_Personnage(pygame.sprite.Sprite):
+	def __init__(self,file="image/laser_personnage.png"):
+		super().__init__()
+		self.son_laser=pygame.mixer.Sound("son/laser_personnage.ogg")
+		self.son_laser.play()
+		self.image=pygame.Surface([48,6])
+		self.image=pygame.image.load(file).convert_alpha()
+		self.rect=self.image.get_rect()
+		self.vitesse=24
+
+	def mouvement(self):
+		self.rect.x+=self.vitesse
+
+class Ennemi_Droite(pygame.sprite.Sprite):
+	def __init__(self,file=("image/ennemi_droite.png")):
+		super().__init__()
+		self.image=pygame.Surface([192,196])
+		self.image=self.ennemi=pygame.image.load(file).convert_alpha()
+		self.rect = self.image.get_rect()
+		self.rect.x=1280
+		self.rect.y=random.randint(40,525)
+		self.vitesse=random.randint(6,12)
+
+	def mouvement(self):
+		self.rect.x-=self.vitesse
+
+class Laser_Ennemi(pygame.sprite.Sprite):
+	def __init__(self,file="image/laser_ennemi.png"):
+		super().__init__()
+		self.image=pygame.Surface([48,6])
+		self.image=pygame.image.load(file).convert_alpha()
+		self.rect=self.image.get_rect()
+		self.vitesse=24
+
+	def mouvement(self):
+		self.rect.x-=self.vitesse
+
+class Ennemi_Gauche(pygame.sprite.Sprite):
+	def __init__(self,file=("image/ennemi_gauche.png")):
+		super().__init__()
+		self.image=pygame.Surface([40,41])
+		self.image=self.ennemi=pygame.image.load(file).convert_alpha()
+		self.rect=self.image.get_rect()
+		self.rect.y=random.randint(40,650)
+		self.vitesse=random.randint(12,24)
+	def mouvement(self):
+		self.rect.x+=self.vitesse
+
+class Bonus_Vie(pygame.sprite.Sprite):
+	def __init__(self,file="image/bonus_vie.png"):
+		super().__init__()
+		self.image=pygame.Surface([16,14])
+		self.image=pygame.image.load(file).convert_alpha()
+		self.rect=self.image.get_rect()
+		self.rect.x=1280
+		self.rect.y=random.randint(50,675)
+		self.vitesse=3
+	def mouvement(self):
+		self.rect.x-=self.vitesse
+
+class Bonus_Vitesse(pygame.sprite.Sprite):
+	def __init__(self,file="image/bonus_vitesse.png"):
+		super().__init__()
+		self.image=pygame.Surface([16,14])
+		self.image=pygame.image.load(file).convert_alpha()
+		self.rect=self.image.get_rect()
+		self.rect.x=1280
+		self.rect.y=random.randint(50,675)
+		self.vitesse=3
+	def mouvement(self):
+		self.rect.x-=self.vitesse
+
+personnage=Personnage()
+groupe_personnage=pygame.sprite.Group()
+groupe_personnage.add(personnage)
+groupe_laser_personnage=pygame.sprite.Group()
+groupe_bonus_vie=pygame.sprite.Group()
+groupe_bonus_vitesse=pygame.sprite.Group()
+groupe_ennemi_droite=pygame.sprite.Group()
+groupe_ennemi_gauche=pygame.sprite.Group()
+groupe_laser_ennemi=pygame.sprite.Group()
+
+def menu():
+	fond=pygame.image.load("image/menu.png").convert()
+	fenetre.blit(pygame.transform.scale(fond,size),(0,0))
+	pygame.display.flip()
+	while boucle==True:
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				sys.exit()
+			if event.type == pygame.KEYDOWN:
+				if event.key == pygame.K_SPACE:
+					jeu()
+def jeu():
+	global police
+	temps.tick()
+	compteur=0
+	ips=60
+	fond=pygame.image.load("image/background.png").convert()
+	xfenetre=0
+	pygame.key.set_repeat(1,1)
+	personnage.son_musique.play()
+	while boucle:
+		temps.tick(ips)
+		rel_xfenetre=xfenetre%largeur
+		fenetre.blit(pygame.transform.scale(fond,size),(rel_xfenetre-largeur,0))#
+		xfenetre-=2
+		if rel_xfenetre<=largeur:
+			fenetre.blit(pygame.transform.scale(fond,size),(rel_xfenetre,0))
+		groupe_personnage.draw(fenetre)
+		groupe_laser_personnage.draw(fenetre)
+		groupe_ennemi_droite.draw(fenetre)
+		groupe_ennemi_gauche.draw(fenetre)
+		groupe_laser_ennemi.draw(fenetre)
+		groupe_bonus_vie.draw(fenetre)
+		groupe_bonus_vitesse.draw(fenetre)
+		collision_personnage_ennemi_droite=pygame.sprite.groupcollide(groupe_personnage,groupe_ennemi_droite,False,True)
+		collision_personnage_ennemi_gauche=pygame.sprite.groupcollide(groupe_personnage, groupe_ennemi_gauche,False,True)
+		collision_laser_personnage_ennemi_droite=pygame.sprite.groupcollide(groupe_laser_personnage,groupe_ennemi_droite,True,True)
+		collision_laser_personnage_ennemi_gauche=pygame.sprite.groupcollide(groupe_laser_personnage,groupe_ennemi_gauche,True,True)
+		collision_personnage_laser_ennemi=pygame.sprite.groupcollide(groupe_personnage,groupe_laser_ennemi,False,True)
+		collision_personnage_bonus_vie=pygame.sprite.groupcollide(groupe_personnage,groupe_bonus_vie,False,True)
+		collision_personnage_bonus_vitesse=pygame.sprite.groupcollide(groupe_personnage,groupe_bonus_vitesse,False,True)
+		for i in groupe_laser_personnage:
+			i.mouvement()
+			if ( i.rect.x>largeur):
+				groupe_laser_personnage.remove(i)
+		for i in groupe_bonus_vie:
+			i.mouvement()
+			if i.rect.x<-16:
+				groupe_bonus_vie.remove(i)
+		for i in groupe_bonus_vitesse:
+			i.mouvement()
+			if i.rect.x<-16:
+				groupe_bonus_vitesse.remove(i)
+		for i in groupe_ennemi_droite:
+			i.mouvement()
+			if i.rect.x<-192:
+				groupe_ennemi_droite.remove(i)
+			if compteur%60==0:
+				laser_ennemi=Laser_Ennemi()
+				laser_ennemi.rect.x=i.rect.x
+				laser_ennemi.rect.y=i.rect.y+96
+				groupe_laser_ennemi.add(laser_ennemi)
+		for i in groupe_ennemi_gauche:
+			i.mouvement()
+			if (i.rect.x>1280):
+				groupe_ennemi_gauche.remove(i)
+		for i in groupe_laser_ennemi:
+			i.mouvement()
+			if ( i.rect.x<0):
+				groupe_laser_ennemi.remove(i)
+		if collision_personnage_ennemi_droite or collision_personnage_laser_ennemi or collision_personnage_ennemi_gauche:
+			personnage.collision()
+		if collision_laser_personnage_ennemi_droite or collision_laser_personnage_ennemi_gauche:
+			personnage.score+=50
+			personnage.son_collision_ennemi.play()
+		if collision_personnage_bonus_vie:
+			personnage.vie+=1
+			personnage.son_bonus.play()
+		if collision_personnage_bonus_vitesse:
+			personnage.vitesse+=0.1
+			personnage.son_bonus.play()
+		if personnage.vie==0:
+			personnage.destruction()
+			groupe_personnage.add(personnage)
+			personnage.son_musique.stop()
+			fin_de_partie()
+		secondes_totales=compteur//ips
+		secondes=secondes_totales%60
+		minutes=secondes_totales//60
+		heures=secondes_totales//3600
+		pygame.display.set_caption(f"Game time: {heures}:{minutes}:{secondes} FPS: {int(temps.get_fps())}")
+		fenetre.blit(police.render(f"HP: {personnage.vie} Score: {personnage.score} Level: {personnage.niveau} Movement speed: {round(personnage.vitesse, 1)} Coordonites: {personnage.position}", 1, (255,255,255)), (0, 20))
+		if compteur%30==0:
+			laser_personnage=Laser_Personnage()
+			laser_personnage.rect.x=personnage.rect.x+65
+			laser_personnage.rect.y=personnage.rect.y+15
+			groupe_laser_personnage.add(laser_personnage)
+		if compteur%180==0:
+			bonus_vitesse=Bonus_Vitesse()
+			groupe_bonus_vitesse.add(bonus_vitesse)
+			if personnage.niveau<30:
+				personnage.niveau+=1
+		if compteur%600==0:
+			bonus_vie=Bonus_Vie()
+			groupe_bonus_vie.add(bonus_vie)
+		if personnage.niveau>=0 and personnage.niveau<=10:
+			if compteur%120==0:
+				ennemi_droite=Ennemi_Droite()
+				ennemi_gauche=Ennemi_Gauche()
+				groupe_ennemi_droite.add(ennemi_droite)
+				groupe_ennemi_droite.add(ennemi_droite)
+				groupe_ennemi_droite.add(ennemi_droite)
+				groupe_ennemi_gauche.add(ennemi_gauche)
+		if personnage.niveau>=10 and personnage.niveau <=20:
+			if compteur%120==0:
+				ennemi_droite=Ennemi_Droite()
+				ennemi_gauche=Ennemi_Gauche()
+				groupe_ennemi_droite.add(ennemi_droite)
+				groupe_ennemi_droite.add(ennemi_droite)
+				groupe_ennemi_droite.add(ennemi_droite)
+				groupe_ennemi_droite.add(ennemi_droite)
+				groupe_ennemi_gauche.add(ennemi_gauche)
+		if personnage.niveau>=20 and personnage.niveau <=30:
+			if compteur%120==0:
+				ennemi_droite=Ennemi_Droite()
+				ennemi_gauche=Ennemi_Gauche()
+				groupe_ennemi_droite.add(ennemi_droite)
+				groupe_ennemi_droite.add(ennemi_droite)
+				groupe_ennemi_droite.add(ennemi_droite)
+				groupe_ennemi_droite.add(ennemi_droite)
+				groupe_ennemi_gauche.add(ennemi_gauche)
+				groupe_ennemi_gauche.add(ennemi_gauche)
+		if personnage.niveau==30:
+			if compteur%60==0:
+				ennemi_gauche=Ennemi_Gauche()
+				groupe_ennemi_gauche.add(ennemi_gauche)
+				groupe_ennemi_gauche.add(ennemi_gauche)
+		for event in pygame.event.get():	
+			if event.type== pygame.QUIT:
+				sys.exit()
+			if event.type== pygame.KEYUP:
+				personnage.arret()
+		keys=pygame.key.get_pressed() 
+		if keys[pygame.K_UP] or keys[pygame.K_w]:
+			personnage.haut()
+		if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+			personnage.bas()
+		if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+			personnage.gauche()
+		if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+			personnage.droite()
+		compteur+=1
+		pygame.display.flip()
+
+def fin_de_partie():
+	global police#
+	fond=pygame.image.load("image/fin_de_partie.png").convert()
+	fenetre.blit(pygame.transform.scale(fond,size),(0,0))
+	texte_score=police.render("Score:"+str(personnage.score),1,(255,255,255))
+	fenetre.blit(texte_score,(550,360))
+	compteur = 0
+	personnage.reset()
+	groupe_bonus_vie.empty()
+	groupe_bonus_vitesse.empty()
+	groupe_laser_personnage.empty()
+	groupe_ennemi_droite.empty()
+	groupe_ennemi_gauche.empty()
+	groupe_laser_ennemi.empty()
+	pygame.display.flip()
+	while boucle==True:
+		for event in pygame.event.get():
+			if event.type== pygame.QUIT:
+				sys.exit()
+			if event.type== pygame.KEYUP:
+				if event.key== pygame.K_SPACE:
+					menu()
+menu()

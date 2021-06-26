@@ -1,0 +1,67 @@
+import pygame
+from pygame.locals import *
+class Personnage(pygame.sprite.Sprite):#On fait de la classe personnage un sprite par le biais de pygame.
+	def __init__(self,file=("image/personnage_arret.png")):#file permet de charger l'image qu'on voudra pour chaques appel de  la fonction "file"
+		super().__init__()#la fonction super permet d'appeler les fonctions de la classe parente.
+		self.image=pygame.Surface([78,36])#Permet de définir la taille de l'image.
+		self.image=self.personnage=pygame.image.load(file).convert_alpha()#Charge une image à partir d'un fichier image.
+		self.rect=self.personnage.get_rect()#Permet de créer un rectangle à partir de l'image chargé a l'endroit de ces coordonnés.
+		self.rect.x=0#donne au rectangle de l'image, une coordonnée d'abscisse.
+		self.rect.y=360#donne au rectangle de l'image, une coordonnée d'ordonnée. 
+		self.vitesse=6#6pixel par action
+	def haut(self):
+		self.image=pygame.image.load("image/personnage_haut.png").convert_alpha()#charge une image en format png qui est capable d'afficher la transparence.
+		self.rect.y-=self.vitesse#le personnage peut se déplacer vers le haut.
+	def bas(self):
+		self.image=pygame.image.load("image/personnage_bas.png").convert_alpha()#charge une image en format png qui est capable d'afficher la transparence.
+		self.rect.y+= self.vitesse#le personnage peut se déplacer vers le haut.
+	def gauche(self):
+		if self.rect.x>0:#Si la classe personnage n'est pas à gauche de l'écran:
+			self.rect.x-= self.vitesse#Le personnage peut se déplacer vers la gauche.
+	def droite(self):
+		if self.rect.x<1200:#Si la classe personnage n'est pas à droite de l'écran:
+			self.rect.x+=self.vitesse#Le personnage peut se déplacer vers la droite.
+	def arret(self):
+		self.image=pygame.image.load("image/personnage_arret.png").convert_alpha()#charge une image en format png qui est capable d'afficher la transparence.
+		self.rect.x+=0#aucun déplacement en abscisse.
+		self.rect.y+=0#aucun déplacement en ordonnée.
+pygame.init()#Initialisation de Pygame
+fenetre=pygame.display.set_mode((1280,720))
+fond=pygame.image.load("background.png").convert()
+fenetre.blit(fond, (0,0))
+personnage=Personnage()
+groupe_personnage=pygame.sprite.Group()#permettra de faire une collision entre deux sprite(personnage/ennemi)
+groupe_personnage.add(personnage)
+groupe_personnage.draw(fenetre)
+pygame.display.flip()#raffraichissement.
+continuer=True
+#boucle du jeu:
+while continuer==True:
+	for event in pygame.event.get():
+		if event.type==QUIT:#Si un de ces événements est de type quitter le jeu:
+			continuer=False
+		#Le joueur appuie sur une touche:
+		if event.type==KEYDOWN:#Si un de ces événements est de type touche appuyé:
+			#déplacements du personnage:
+			if pygame.key.get_pressed()[pygame.K_UP] or pygame.key.get_pressed()[pygame.K_w]:#Si le joueur appuie sur la flèche du haut:
+				personnage.haut()
+			if pygame.key.get_pressed()[pygame.K_DOWN] or pygame.key.get_pressed()[K_s]:#Si le joueur appuie sur la flèche du bas:
+				personnage.bas()
+			if pygame.key.get_pressed()[K_LEFT] or pygame.key.get_pressed()[K_a]:#Si le joueur appuie sur la flèche de gauche:
+				personnage.gauche()
+			if pygame.key.get_pressed()[K_RIGHT] or pygame.key.get_pressed()[K_d]:#Si le joueur appuie sur la flèche de droite:
+				personnage.droite()
+				#Le joueur relache une touche:
+		if event.type==KEYUP:
+			if event.key==K_UP or event.key==K_w:
+				personnage.arret()
+			if event.key==K_DOWN or event.key==K_s:
+				personnage.arret()
+			if event.key==K_LEFT or event.key==K_a:
+				personnage.arret()
+			if event.key==K_RIGHT or event.key==K_d:
+				personnage.arret()
+		#Re-collage
+		fenetre.blit(fond, (0,0))
+		pygame.display.flip()
+pygame.quit()
