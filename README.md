@@ -1,6 +1,6 @@
 # Pygame shoot them up
 
-This is a small shoot them up game made using the Pygame library.
+This is a small [shoot them up](https://en.wikipedia.org/wiki/Shoot_%27em_up) game made using the [Pygame](https://www.pygame.org/news) library.
 
 ## Requirements
 
