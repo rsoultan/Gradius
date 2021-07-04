@@ -2,8 +2,7 @@
 
 from sources.Game import Game
 
-game = Game()
-game.run()
+Game().run()
 
 """
 information_resolution = pygame.display.Info()
