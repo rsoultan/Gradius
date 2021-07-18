@@ -1,10 +1,12 @@
 from enum import Enum
 
 import pygame
-
-from .Button import Button
-from .Entity import Entity
-from .Player import Player
+from sources.Entities.BackgroundScrolling import BackgroundScrolling
+from sources.Entities.Button import Button
+from sources.Entities.Entity import Entity
+from sources.Entities.Player import Player
+from sources.Entities.Spawner import Spawner
+from sources.Entities.HUD import HUD
 
 
 class GameSceneIds(Enum):
@@ -30,8 +32,10 @@ class Scene(Entity):
             entity.draw(window)
 
 def switch_scene(*argv):
-    game = argv[0][0]
-    next_scene_id = argv[0][1]
+    pygame.mixer_music.fadeout(1000)
+    pygame.mixer.fadeout(1000)
+    game = argv[0]
+    next_scene_id = argv[1]
     game.scene = create_scene(game, next_scene_id)
 
 def create_scene(game, scene_id):
@@ -41,7 +45,12 @@ def create_scene(game, scene_id):
         ]
         return Scene(scene_id, entities)
     elif scene_id == GameSceneIds.GAME:
+        spawner = Spawner()
+        player = Player(spawner)
         entities = [
-            Player()
+            BackgroundScrolling(),
+            spawner,
+            player,
+            HUD(player, game.font)
         ]
         return Scene(scene_id, entities)

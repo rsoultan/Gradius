@@ -1,6 +1,7 @@
 import abc
 from abc import ABCMeta, abstractclassmethod
 
+
 class Entity(object, metaclass=abc.ABCMeta):
     @classmethod
     @abstractclassmethod

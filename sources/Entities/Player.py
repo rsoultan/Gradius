@@ -1,7 +1,7 @@
 import pygame
+from sources.Entities.Entity import Entity
+from sources.Settings import SETTINGS
 
-from .Settings import SETTINGS
-from .Entity import Entity
 
 class PlayerBeam(pygame.sprite.Sprite, Entity):
 	def __init__(self, player, x, y):
@@ -17,16 +17,23 @@ class PlayerBeam(pygame.sprite.Sprite, Entity):
 		pass
 
 	def update(self, elapsed_time):
-		if self.rect.x + self.speed > SETTINGS["resolution"][0]:
-			self.player.attacks_group.remove(self)
+		if self.rect.x + self.speed > SETTINGS["WIDTH"]:
+			self.player.beams.remove(self)
 		self.rect.x += self.speed
 
 	def draw(self, window):
-		window.draw
+		pass
 
 class Player(pygame.sprite.Sprite, Entity):
-	def __init__(self):
+	def __init__(self, spawner):
 		super().__init__()
+		self.sounds = {
+			'destroyed': pygame.mixer.Sound("assets/sounds/player_destroyed.ogg"),
+			'hit': pygame.mixer.Sound("assets/sounds/player_hit.ogg"),
+			'shoot': pygame.mixer.Sound("assets/sounds/player_shoot.ogg"),
+		}
+		for sounds in self.sounds.values():
+			sounds.set_volume(SETTINGS['SOUNDS_VOLUME'])
 		self.images = {
 			pygame.K_UP: pygame.image.load("assets/images/player/player_up.png").convert_alpha(),
 			pygame.K_DOWN: pygame.image.load("assets/images/player/player_down.png").convert_alpha(),
@@ -45,32 +52,43 @@ class Player(pygame.sprite.Sprite, Entity):
 		self.rect.y = 360
 		self.velocity_x = 0
 		self.velocity_y = 0
-		self.move_speed = 3
+		self.ms = 3
+		self.attack_speed = 1
+		self.score = 0
+		self.hp = 3
 		self.elapsed_time = 0
-		self.attack_speed = 500
-		self.player_group = pygame.sprite.GroupSingle()
-		self.player_group.add(self)
-		self.attacks_group = pygame.sprite.Group()
+		self.group = pygame.sprite.GroupSingle(self)
+		self.beams = pygame.sprite.Group()
+		self.spawner = spawner
+
+	def destroy(self):
+		self.sounds['destroyed'].play()
+
+	def hit(self, enemy_attack=1):
+		self.hp -= enemy_attack
+		self.sounds['hit'].play()
+		if self.hp <= 0:
+			self.destroy()
 
 	def up(self):
-		if self.rect.y - self.move_speed > 0:
+		if self.rect.y - self.ms > 0:
 			self.image = self.images[pygame.K_UP]
-			self.velocity_y = -self.move_speed
+			self.velocity_y = -self.ms
 
 	def down(self):
-		if self.rect.y < SETTINGS["resolution"][1] - self.rect.height:
+		if self.rect.y < SETTINGS["HEIGHT"] - self.rect.height:
 			self.image = self.images[pygame.K_DOWN]
-			self.velocity_y = self.move_speed
+			self.velocity_y = self.ms
 
 	def left(self):
-		if self.rect.x - self.move_speed > 0:
+		if self.rect.x - self.ms > 0:
 			self.image = self.images[pygame.K_LEFT]
-			self.velocity_x = -self.move_speed
+			self.velocity_x = -self.ms
 
 	def right(self):
-		if self.rect.x < SETTINGS["resolution"][0] - self.rect.width:
+		if self.rect.x < SETTINGS["WIDTH"] - self.rect.width:
 			self.image = self.images[pygame.K_RIGHT]
-			self.velocity_x = self.move_speed
+			self.velocity_x = self.ms
 
 	def event(self, event):
 		if event.type == pygame.KEYDOWN:
@@ -86,7 +104,8 @@ class Player(pygame.sprite.Sprite, Entity):
 		self.velocity_y = 0
 		if self.elapsed_time > self.attack_speed:
 			self.elapsed_time -= self.attack_speed
-			self.attacks_group.add(PlayerBeam(self, self.rect.x + self.rect.width, self.rect.y + (self.rect.height / 2)))
+			self.beams.add(PlayerBeam(self, self.rect.x + self.rect.width, self.rect.y + (self.rect.height / 2)))
+			self.sounds['shoot'].play()
 		if self.moves[pygame.K_UP] and not self.moves[pygame.K_DOWN]:
 			self.up()
 		if self.moves[pygame.K_DOWN] and not self.moves[pygame.K_UP]:
@@ -98,9 +117,16 @@ class Player(pygame.sprite.Sprite, Entity):
 		if not self.moves[pygame.K_UP] and not self.moves[pygame.K_DOWN] and not self.moves[pygame.K_LEFT] and not self.moves[pygame.K_RIGHT]:
 			self.image = self.images[pygame.K_RIGHT]
 		self.rect = pygame.Rect(self.rect.x + self.velocity_x, self.rect.y + self.velocity_y, self.rect.width, self.rect.height)
-		for beam in self.attacks_group:
+		for beam in self.beams:
 			beam.update(elapsed_time)
+		collide_player_right_enemies = pygame.sprite.groupcollide(self.group, self.spawner.right_enemies_group, False, True)
+		collide_player_beam_right_enemies = pygame.sprite.groupcollide(self.beams, self.spawner.right_enemies_group, True, True)
+		collide_player_enemies_beams = pygame.sprite.groupcollide(self.group, self.spawner.enemies_beam, False, True)
+		if collide_player_right_enemies or collide_player_enemies_beams:
+			self.hit()
+		if collide_player_beam_right_enemies:
+			self.score += 100
 
 	def draw(self, window):
-		self.player_group.draw(window)
-		self.attacks_group.draw(window)
+		self.group.draw(window)
+		self.beams.draw(window)

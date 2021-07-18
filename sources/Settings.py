@@ -1,4 +1,7 @@
 SETTINGS = {
-	"fps": 60,
-	"resolution": (1280, 720)
+	"FPS": 60,
+	"WIDTH": 1280,
+	"HEIGHT": 720,
+	"SOUNDS_VOLUME": 1.0,
+	"MUSICS_VOLUME": 0.1
 }

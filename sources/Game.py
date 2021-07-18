@@ -1,8 +1,10 @@
 import pygame
 
-from .Scene import GameSceneIds, create_scene
-from .Button import Button
-from .Settings import SETTINGS
+from sources.Entities.Button import Button
+from sources.Entities.Player import Player
+from sources.Entities.Scene import GameSceneIds, create_scene, switch_scene
+from sources.Settings import SETTINGS
+
 
 class Game():
 	def __init__(self):
@@ -10,15 +12,15 @@ class Game():
 		pygame.display.set_caption("Pygame shoot them up")
 		pygame.key.set_repeat(1, 1)
 		self.clock = pygame.time.Clock()
-		self.dt = 0
+		self.seconds = 3590
 		self.window = None
-		self.font = pygame.font.SysFont("arial", 32)
+		self.font = pygame.font.Font("assets/fonts/ArcadeAlternate.ttf", 32)
 		self.scene = create_scene(self, GameSceneIds.MAIN_MENU)
 		self.is_running = True
-		self.nb_loop_ingame = 0
 
 	def run(self):
-		self.window = pygame.display.set_mode(SETTINGS["resolution"])
+		self.window = pygame.display.set_mode((SETTINGS["WIDTH"], SETTINGS['HEIGHT']))
+		pygame.mixer.music.set_volume(SETTINGS['MUSICS_VOLUME'])
 		while self.is_running:
 			self.event()
 			self.update()
@@ -32,16 +34,15 @@ class Game():
 			self.scene.event(event)
 
 	def update(self):
-		total_seconds = self.nb_loop_ingame // SETTINGS["fps"]
-		seconds = total_seconds % 60
-		minutes = total_seconds // 60
-		hours = total_seconds // 3600
-		self.nb_loop_ingame += 1
-		pygame.display.set_caption(f"Game time: {hours}:{minutes}:{seconds} FPS: {int(self.clock.get_fps())}")
-		self.dt = self.clock.tick(SETTINGS["fps"])
+		dt = self.clock.tick(SETTINGS["FPS"]) / 1000
+		self.seconds += dt
 		pygame.display.flip()
-		self.scene.update(self.dt)
+		self.scene.update(dt)
+		if self.scene.id == GameSceneIds.GAME:
+			for entity in self.scene.entities:
+				if isinstance(entity, Player):
+					if entity.hp <= 0:
+						switch_scene(self, GameSceneIds.MAIN_MENU)
 
 	def draw(self, window):
-		self.window.fill((0, 0, 0))
 		self.scene.draw(window)

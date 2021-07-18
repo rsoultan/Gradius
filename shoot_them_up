@@ -5,12 +5,6 @@ from sources.Game import Game
 Game().run()
 
 """
-information_resolution = pygame.display.Info()
-largeur = int((information_resolution.current_w))
-hauteur = int((information_resolution.current_h))
-size = (largeur,hauteur)
-boucle = True
-temps = pygame.time.Clock()
 
 class Personnage(pygame.sprite.Sprite):
 	def __init__(self,file=("assets/images/personnage_arret.png")):

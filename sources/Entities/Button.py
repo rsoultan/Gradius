@@ -1,6 +1,5 @@
 import pygame
-
-from sources.Entity import Entity
+from sources.Entities.Entity import Entity
 
 
 class Button(Entity):
@@ -12,7 +11,7 @@ class Button(Entity):
         self.hover = False
         self.pressed = False
         self.clicked = False
-    
+
     def event(self, event):
         if self.rect.collidepoint(pygame.mouse.get_pos()):
             self.hover = True
@@ -27,7 +26,7 @@ class Button(Entity):
 
     def update(self, elapsed_time):
         if self.clicked:
-            self.on_click(self.on_click_params)
+            self.on_click(*self.on_click_params)
             self.clicked = False
 
     def draw(self, window):
